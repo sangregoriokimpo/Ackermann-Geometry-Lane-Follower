@@ -61,7 +61,9 @@ class AckermannVision:
         if line is None:
             return None
         slope, intercept = line
-        if abs(slope) < 0.01:
+        if abs(slomage.copy()
+        for line in lines:
+            if linpe) < 0.01:
             return None
         x1 = int((y1 - intercept) / slope)
         x2 = int((y2 - intercept) / slope)
