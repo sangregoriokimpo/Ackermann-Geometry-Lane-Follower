@@ -74,7 +74,7 @@ class AckermannVision:
     def lane_lines(self, image, lines):
         left_lane, right_lane = self.average_slope_intercept(lines)
         y1 = image.shape[0]
-        y2 = y1 * 0.6
+        y2 = int(y1 * 0.6)
         return self.pixel_points(y1, y2, left_lane), self.pixel_points(y1, y2, right_lane)
 
     def draw_lane_lines(self, image, lines, road_center=None):
@@ -91,7 +91,14 @@ class AckermannVision:
         if not ret or frame is None:
             return None, None, None
 
+        # Resize and crop to center width
         frame = cv2.resize(frame, (320, 240))
+        crop_width = 160
+        center_x = frame.shape[1] // 2
+        half_crop = crop_width // 2
+        frame = frame[:, center_x - half_crop : center_x + half_crop]  # result: (240, 160, 3)
+
+        # Grayscale and edge detection
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray, (5, 5), 0)
         edges = cv2.Canny(blur, 50, 150)
@@ -107,9 +114,9 @@ class AckermannVision:
             if left_line and right_line:
                 road_center = (left_line[1][0] + right_line[1][0]) // 2
             elif left_line:
-                road_center = left_line[1][0] + 100
+                road_center = left_line[1][0] + 80
             elif right_line:
-                road_center = right_line[1][0] - 100
+                road_center = right_line[1][0] - 80
 
             if road_center is not None:
                 error = road_center - mid_x
@@ -121,14 +128,15 @@ class AckermannVision:
         else:
             lane_img = frame.copy()
 
-        return angle, lane_img, frame[int(240*0.4):] / 255.0
+        cropped_input = frame[int(240 * 0.4):] / 255.0  # shape: (144, 160, 3)
+        return angle, lane_img, cropped_input
 
 
 # -------- Neural Driving Agent --------
 class DrivingAgent:
     def __init__(self):
         self.model = Sequential([
-            Conv2D(32, (5, 5), activation='relu', strides=(2, 2), input_shape=(144, 320, 3)),
+            Conv2D(32, (5, 5), activation='relu', strides=(2, 2), input_shape=(144, 160, 3)),
             MaxPooling2D(2, 2),
             Conv2D(64, (3, 3), activation='relu', strides=(2, 2)),
             MaxPooling2D(2, 2),
@@ -140,7 +148,7 @@ class DrivingAgent:
         self.memory = []
 
     def predict(self, img):
-        img = np.reshape(img, (1, 144, 320, 3))
+        img = np.reshape(img, (1, 144, 160, 3))
         return self.model.predict(img, verbose=0)[0][0]
 
     def remember(self, img, angle):
@@ -238,7 +246,7 @@ Modes:
                     self.px.backward(self.speed)
                     self.mode = "manual"
                 elif key == ord('v'):
-                    self.kalman = KalmanFilter()  # reset filter
+                    self.kalman = KalmanFilter()
                     self.mode = "vision"
                     print("Mode: VISION")
                 elif key == ord('t'):

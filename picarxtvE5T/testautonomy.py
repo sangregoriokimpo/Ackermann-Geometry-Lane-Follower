@@ -6,7 +6,7 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
 from tensorflow.keras.optimizers import Adam
 from picarx import Picarx
 from time import sleep
-from kalmanFilter import KalmanFilter
+
 
 # -------- Vision Module ---------
 class AckermannVision:
@@ -22,10 +22,6 @@ class AckermannVision:
 
         self.minAngle = -30
         self.maxAngle = 30
-
-    def release(self):
-        if self.cap.isOpened():
-            self.cap.release()
 
     def region_selection(self, image):
         mask = np.zeros_like(image)
@@ -65,7 +61,7 @@ class AckermannVision:
         if line is None:
             return None
         slope, intercept = line
-        if abs(slope) < 0.01:
+        if abs(slope) < 0.01:  # avoid nearly horizontal lines
             return None
         x1 = int((y1 - intercept) / slope)
         x2 = int((y2 - intercept) / slope)
@@ -121,17 +117,17 @@ class AckermannVision:
         else:
             lane_img = frame.copy()
 
-        return angle, lane_img, frame[int(240*0.4):] / 255.0
+        return angle, lane_img, frame[int(240*0.4):] / 255.0  # return cropped input for model
 
 
 # -------- Neural Driving Agent --------
 class DrivingAgent:
     def __init__(self):
         self.model = Sequential([
-            Conv2D(32, (5, 5), activation='relu', strides=(2, 2), input_shape=(144, 320, 3)),
-            MaxPooling2D(2, 2),
-            Conv2D(64, (3, 3), activation='relu', strides=(2, 2)),
-            MaxPooling2D(2, 2),
+            Conv2D(32, (5,5), activation='relu', strides=(2,2), input_shape=(144, 320, 3)),
+            MaxPooling2D(2,2),
+            Conv2D(64, (3,3), activation='relu', strides=(2,2)),
+            MaxPooling2D(2,2),
             Flatten(),
             Dense(128, activation='relu'),
             Dense(1, activation='linear')
@@ -166,7 +162,6 @@ class PicarXController:
         self.px = Picarx()
         self.vision = AckermannVision()
         self.agent = DrivingAgent()
-        self.kalman = KalmanFilter()
         self.mode = "manual"  # options: manual, vision, train, model
         self.speed = 0.1
 
@@ -183,7 +178,7 @@ class PicarXController:
 Modes:
   w/a/d/s - Manual drive
   space   - Stop
-  v       - Vision lane follow (with Kalman smoothing)
+  v       - Vision lane follow (based on green dot)
   t       - Train model from vision steering
   m       - Drive using model (autonomous)
   q       - Quit
@@ -194,19 +189,14 @@ Modes:
                 if lane_img is not None:
                     cv2.imshow("Lane View", lane_img)
 
-                if angle is not None:
-                    smoothed_angle = self.kalman.update(angle)
-                else:
-                    smoothed_angle = None
-
-                if self.mode == "vision" and smoothed_angle is not None:
-                    self.px.set_dir_servo_angle(int(smoothed_angle))
+                if self.mode == "vision" and angle is not None:
+                    self.px.set_dir_servo_angle(int(angle))
                     self.px.forward(self.speed)
 
-                elif self.mode == "train" and smoothed_angle is not None:
-                    self.agent.remember(img_input, smoothed_angle)
+                elif self.mode == "train" and angle is not None:
+                    self.agent.remember(img_input, angle)
                     self.agent.train()
-                    self.px.set_dir_servo_angle(int(smoothed_angle))
+                    self.px.set_dir_servo_angle(int(angle))
                     self.px.forward(self.speed)
 
                 elif self.mode == "model" and img_input is not None:
@@ -238,15 +228,12 @@ Modes:
                     self.px.backward(self.speed)
                     self.mode = "manual"
                 elif key == ord('v'):
-                    self.kalman = KalmanFilter()  # reset filter
                     self.mode = "vision"
                     print("Mode: VISION")
                 elif key == ord('t'):
-                    self.kalman = KalmanFilter()
                     self.mode = "train"
-                    print("Mode: TRAIN (CNN learning from smoothed angle)")
+                    print("Mode: TRAIN (CNN learning from green dot)")
                 elif key == ord('m'):
-                    self.kalman = KalmanFilter()
                     self.mode = "model"
                     print("Mode: MODEL (Autonomous CNN driving)")
         finally:
