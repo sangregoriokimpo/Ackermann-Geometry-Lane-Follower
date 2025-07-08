@@ -1,5 +1,5 @@
 class KalmanFilter:
-    def __init__(self, q=0.1, r=4.0):
+    def __init__(self, q=0.05, r=3.0):
         self.q = q  # process noise
         self.r = r  # measurement noise
         self.x = 0.0  # estimated angle
