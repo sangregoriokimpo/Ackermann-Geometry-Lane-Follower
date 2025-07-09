@@ -5,7 +5,7 @@ import cv2
 
 class TrafficVision:
     def __init__(self):
-        self.model = YOLO("models/version2/best_train10.pt")
+        self.model = YOLO("models/version3/best_withbackgroundimages.pt")
         self.class_names = {
             0: '20 mph sign',
             1: '30 mph sign',
