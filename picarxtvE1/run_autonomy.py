@@ -3,7 +3,7 @@ import time
 import os
 import sys
 import subprocess
-from picarxtlE1.vision import LineFollower
+from picarxtvE1.vision import LineFollower
 from picarx import Picarx
 
 # Start pigpiod safely

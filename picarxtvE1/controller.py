@@ -3,7 +3,7 @@ import tty
 import termios
 import select
 import time
-from picarxtlE1.hardware import Car
+from picarxtvE1.hardware import Car
 
 car = Car()
 step = 5  # degrees per key press

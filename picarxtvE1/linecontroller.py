@@ -1,5 +1,5 @@
-from picarxtlE1.hardware import Car
-from picarxtlE1.vision import LineFollower
+from picarxtvE1.hardware import Car
+from picarxtvE1.vision import LineFollower
 import cv2
 
 car = Car()
