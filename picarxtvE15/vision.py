@@ -5,6 +5,8 @@ import numpy as np
 from pid import PIDController
 import time
 
+#Kp=2.5, Ki=0.75, Kd=0.3, integral_limit=50 without curve
+
 class AckermannVision:
     def __init__(self, camera_device='/dev/video0'):
         self.cap = cv2.VideoCapture(camera_device, cv2.CAP_V4L2)
