@@ -80,32 +80,20 @@ class PicarXController:
                     new_speed = self.speedHandler.update_speed(detected_labels)
                     self.speed = new_speed
 
-
-
-                #     if "Stop_Sign" in detected_labels:
-                #         if not self.stop_sign_recently_handled:
-                #             print("🛑 Stop sign detected! Pausing for 3 seconds...")
-                #             self.px.forward(0)
-                #             sleep(3)
-                #             self.stop_sign_recently_handled = True
-                #             self.last_stop_time = current_time
-                #     elif self.stop_sign_recently_handled and (current_time - self.last_stop_time > self.stop_sign_cooldown):
-                #         self.stop_sign_recently_handled = False
-                # else:
-                #     # Show raw frame if not running detection
-                #     cv2.imshow("Traffic Sign Detection", sign_frame)
-
                 # Lane view
                 if lane_img is not None and lane_img.size > 0:
                     cv2.imshow("Lane Detection", lane_img)
 
-                # Apply Kalman filtering for smoother steering
+                # Safe Kalman filtering
                 if angle is not None:
                     smoothed_angle = self.kalman.update(angle)
                     if self.mode == "vision":
                         self.px.set_dir_servo_angle(int(smoothed_angle))
                         self.px.forward(self.speed)
-                print(f"ANGLE: {angle}, KF: {smoothed_angle}")
+                    print(f"ANGLE: {angle:.2f}, KF: {smoothed_angle:.2f}")
+                else:
+                    print("ANGLE: None — skipping Kalman update")
+
 
                 # User controls
                 key = cv2.waitKey(1) & 0xFF
