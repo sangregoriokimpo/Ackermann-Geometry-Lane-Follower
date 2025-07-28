@@ -56,7 +56,7 @@ class PicarXController:
         q       - Quit
         """)
         frame_count = 0
-        process_every_n = 15  # Adjust to reduce detection frequency
+        process_every_n = 25  # Adjust to reduce detection frequency
 
         try:
             while True:
