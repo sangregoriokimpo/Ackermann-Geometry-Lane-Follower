@@ -51,12 +51,17 @@ class TrafficVision:
         for box in results.boxes:
             cls_id = int(box.cls)
             label = self.class_names.get(cls_id, "Unknown")
+            conf = float(box.conf.item())  # Extract confidence score
             labels_detected.add(label)
 
-            # Draw the box
+            # Draw the bounding box
             xyxy = box.xyxy[0].cpu().numpy().astype(int)
             cv2.rectangle(frame, (xyxy[0], xyxy[1]), (xyxy[2], xyxy[3]), (0, 255, 0), 2)
-            cv2.putText(frame, label, (xyxy[0], xyxy[1] - 10),
+
+            # Create label with confidence percentage
+            label_with_conf = f"{label}: {conf*100:.1f}%"
+            cv2.putText(frame, label_with_conf, (xyxy[0], xyxy[1] - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
         return frame, labels_detected
+
